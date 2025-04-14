@@ -63,6 +63,11 @@ st.markdown("""
         .stSelectbox label {
             display: none;
         }
+
+        /* ✅ NUCLEAR FIX - HIDE UNKNOWN WHITE BLOCK */
+        div[data-testid="stHorizontalBlock"] > div:has(> div:empty) {
+            display: none !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -124,13 +129,13 @@ elif st.session_state.page == "Documents":
 else:
     st.title("📊 Features vs Reviews Dashboard")
 
-    # --- App Selector Buttons ---
+    # App selector buttons
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
         if st.button("📹 zoom", use_container_width=True):
             st.session_state.selected_app = "zoom"
     with col2:
-        if st.button("💻 Webex", use_container_width=True):
+        if st.button("💻 webex", use_container_width=True):
             st.session_state.selected_app = "webex"
     with col3:
         if st.button("🌐 Firefox", use_container_width=True):
