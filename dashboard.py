@@ -63,8 +63,6 @@ st.markdown("""
         .stSelectbox label {
             display: none;
         }
-
-        /* ✅ NUCLEAR FIX - HIDE UNKNOWN WHITE BLOCK */
         div[data-testid="stHorizontalBlock"] > div:has(> div:empty) {
             display: none !important;
         }
@@ -135,7 +133,7 @@ else:
         if st.button("📹 zoom", use_container_width=True):
             st.session_state.selected_app = "zoom"
     with col2:
-        if st.button("💻 webex", use_container_width=True):
+        if st.button("💻 Webex", use_container_width=True):
             st.session_state.selected_app = "webex"
     with col3:
         if st.button("🌐 Firefox", use_container_width=True):
@@ -164,7 +162,7 @@ else:
         df['Negative (%)'] = df['Negative'] / total
 
         melted = df.melt(
-            id_vars=['Month', 'Feature Title', 'Feature Description', 'Feature Type'],
+            id_vars=['Month', 'Feature Title'],
             value_vars=['Positive (%)', 'Neutral (%)', 'Negative (%)'],
             var_name='Sentiment',
             value_name='Proportion'
@@ -175,7 +173,7 @@ else:
             x="Month",
             y="Proportion",
             color="Sentiment",
-            custom_data=["Feature Title", "Feature Description", "Feature Type"],
+            custom_data=["Feature Title"],
             color_discrete_map={
                 "Positive (%)": "green",
                 "Neutral (%)": "orange",
@@ -188,9 +186,7 @@ else:
                 "<b>%{x|%b %Y}</b><br>" +
                 "Sentiment: %{fullData.name}<br>" +
                 "Proportion: %{y:.0%}<br><br>" +
-                "<b>%{customdata[0]}</b><br>" +
-                "%{customdata[1]}<br>" +
-                "Type: %{customdata[2]}<extra></extra>"
+                "<b>%{customdata[0]}</b><extra></extra>"
             ),
             mode="none"
         )
@@ -200,7 +196,18 @@ else:
             yaxis_tickformat=".0%",
             legend_title_text="Sentiment",
             legend=dict(orientation="h", y=1.1, x=0.3),
-            margin=dict(t=60, b=40)
+            margin=dict(t=60, b=40),
+            hovermode="x",
+            xaxis_showspikes=True,
+            yaxis_showspikes=True,
+            xaxis_spikemode='across',
+            yaxis_spikemode='across',
+            xaxis_spikesnap='cursor',
+            yaxis_spikesnap='cursor',
+            xaxis_spikethickness=1,
+            yaxis_spikethickness=1,
+            xaxis_spikecolor='blue',
+            yaxis_spikecolor='blue'
         )
 
         st.plotly_chart(fig, use_container_width=True)
