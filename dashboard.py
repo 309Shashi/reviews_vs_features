@@ -120,17 +120,27 @@ if st.session_state.page == "Team Members":
             """, unsafe_allow_html=True)
 
 elif st.session_state.page == "Documents":
-    st.title("Documents")
-    st.info("This section is under construction.")
+    st.title("📄 Documents")
+    st.info("Download the project document below:")
+
+    try:
+        with open("Team Brown Video Presentation Checkpoint.pdf", "rb") as f:
+            st.download_button(
+                label="📄 Download Team Brown Video Presentation (PDF)",
+                data=f,
+                file_name="Team Brown Video Presentation Checkpoint.pdf",
+                mime="application/pdf"
+            )
+    except FileNotFoundError:
+        st.warning("⚠️ PDF file not found. Make sure it's in the same folder as dashboard.py.")
 
 # --- Dashboard Page ---
 else:
     st.title("📊 Features vs Reviews Dashboard")
 
-    # App selector buttons
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        if st.button("📹 Zoom", use_container_width=True):
+        if st.button("📹 zoom", use_container_width=True):
             st.session_state.selected_app = "zoom"
     with col2:
         if st.button("💻 Webex", use_container_width=True):
@@ -150,7 +160,7 @@ else:
             st.error(f"CSV file for '{selected_app}' not found.")
             st.stop()
 
-        required_cols = {"Month", "Positive", "Neutral", "Negative", "Feature Title", "Feature Description", "Feature Type"}
+        required_cols = {"Month", "Positive", "Neutral", "Negative", "Feature Title"}
         if not required_cols.issubset(df.columns):
             st.error(f"The CSV must contain columns: {', '.join(required_cols)}.")
             st.stop()
