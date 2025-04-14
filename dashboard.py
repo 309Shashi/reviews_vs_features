@@ -1,7 +1,12 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 import os
+import base64
+
+# --- Toggle Display for Apps ---
+SHOW_WEBEX = False  # Change to True to show Webex app
+SHOW_FIREFOX = False  # Change to True to show Firefox app
 
 # --- Page Config ---
 st.set_page_config(page_title="Features vs Reviews Dashboard", layout="wide")
@@ -11,6 +16,8 @@ if "page" not in st.session_state:
     st.session_state.page = "Dashboard"
 if "selected_app" not in st.session_state:
     st.session_state.selected_app = "zoom"
+if "selected_doc" not in st.session_state:
+    st.session_state.selected_doc = None
 
 # --- Navigation helper ---
 def set_page(page_name):
@@ -115,24 +122,39 @@ if st.session_state.page == "Team Members":
             st.markdown(f"""
                 <div style="background:#fff;padding:15px 20px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);margin-bottom:20px;">
                     <div style="font-size:18px;font-weight:600;">🧑🏻‍🎓 {name}</div>
-                    <div style="font-size:15px;margin-top:5px;">📧 {email}</div>
+                    <div style="font-size:15px;margin-top:5px;">
+                        📧 <a href="mailto:{email}" style="text-decoration:none;color:#0072C6;">{email}</a>
+                    </div>
                 </div>
             """, unsafe_allow_html=True)
 
 elif st.session_state.page == "Documents":
     st.title("📄 Documents")
-    st.info("Download the project document below:")
+    st.info("Click a document to preview it below or hide it.")
 
-    try:
-        with open("Team Brown Video Presentation Checkpoint.pdf", "rb") as f:
-            st.download_button(
-                label="📄 Download Team Brown Video Presentation (PDF)",
-                data=f,
-                file_name="Team Brown Video Presentation Checkpoint.pdf",
-                mime="application/pdf"
-            )
-    except FileNotFoundError:
-        st.warning("⚠️ PDF file not found. Make sure it's in the same folder as dashboard.py.")
+    pdf_filename = "Team Brown Video Presentation Checkpoint.pdf"
+
+    if st.button(f"📄 {pdf_filename}"):
+        if st.session_state.selected_doc == pdf_filename:
+            st.session_state.selected_doc = None
+        else:
+            st.session_state.selected_doc = pdf_filename
+
+    if st.session_state.selected_doc == pdf_filename:
+        try:
+            with open(pdf_filename, "rb") as f:
+                base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+                preview = f"""
+                    <object
+                        data="data:application/pdf;base64,{base64_pdf}"
+                        type="application/pdf"
+                        width="100%" height="700px">
+                        <p>Unable to display PDF. <a href="{pdf_filename}">Download instead</a>.</p>
+                    </object>
+                """
+                st.markdown(preview, unsafe_allow_html=True)
+        except FileNotFoundError:
+            st.warning(f"⚠️ File not found: {pdf_filename}")
 
 # --- Dashboard Page ---
 else:
@@ -140,19 +162,20 @@ else:
 
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        if st.button("📹 zoom", use_container_width=True):
+        if st.button("🎩 zoom", use_container_width=True):
             st.session_state.selected_app = "zoom"
-    with col2:
-        if st.button("💻 Webex", use_container_width=True):
-            st.session_state.selected_app = "webex"
-    with col3:
-        if st.button("🌐 Firefox", use_container_width=True):
-            st.session_state.selected_app = "firefox"
+    if SHOW_WEBEX:
+        with col2:
+            if st.button("💻 Webex", use_container_width=True):
+                st.session_state.selected_app = "webex"
+    if SHOW_FIREFOX:
+        with col3:
+            if st.button("🌐 Firefox", use_container_width=True):
+                st.session_state.selected_app = "firefox"
 
     selected_app = st.session_state.selected_app
     df = load_data(selected_app)
 
-    st.markdown("<div class='app-card'>", unsafe_allow_html=True)
     st.subheader(f"Sentiment Trend for: {selected_app}")
 
     try:
@@ -171,58 +194,65 @@ else:
         df['Neutral (%)'] = df['Neutral'] / total
         df['Negative (%)'] = df['Negative'] / total
 
-        melted = df.melt(
-            id_vars=['Month', 'Feature Title'],
-            value_vars=['Positive (%)', 'Neutral (%)', 'Negative (%)'],
-            var_name='Sentiment',
-            value_name='Proportion'
-        )
+        df_ready = df[["Month", "Feature Title", "Positive (%)", "Neutral (%)", "Negative (%)"]]
 
-        fig = px.area(
-            melted,
-            x="Month",
-            y="Proportion",
-            color="Sentiment",
-            custom_data=["Feature Title"],
-            color_discrete_map={
-                "Positive (%)": "green",
-                "Neutral (%)": "orange",
-                "Negative (%)": "red"
-            }
-        )
+        fig = go.Figure()
 
-        fig.update_traces(
+        fig.add_trace(go.Scatter(
+            x=df_ready["Month"],
+            y=df_ready["Positive (%)"],
+            name="Positive",
+            mode="lines",
+            stackgroup="one",
+            line=dict(color="green"),
+            hoverinfo="skip"
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=df_ready["Month"],
+            y=df_ready["Neutral (%)"],
+            name="Neutral",
+            mode="lines",
+            stackgroup="one",
+            line=dict(color="orange"),
+            hoverinfo="skip"
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=df_ready["Month"],
+            y=df_ready["Negative (%)"],
+            name="Negative",
+            mode="lines",
+            stackgroup="one",
+            line=dict(color="red"),
+            hoverinfo="skip"
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=df_ready["Month"],
+            y=[1]*len(df_ready),
+            mode="markers",
+            marker=dict(opacity=0),
+            showlegend=False,
             hovertemplate=(
                 "<b>%{x|%b %Y}</b><br>" +
-                "Sentiment: %{fullData.name}<br>" +
-                "Proportion: %{y:.0%}<br><br>" +
-                "<b>%{customdata[0]}</b><extra></extra>"
+                "Feature Title: %{customdata[0]}<br>" +
+                "Positive: %{customdata[1]:.0%}<br>" +
+                "Neutral: %{customdata[2]:.0%}<br>" +
+                "Negative: %{customdata[3]:.0%}<extra></extra>"
             ),
-            mode="none"
-        )
+            customdata=df_ready[["Feature Title", "Positive (%)", "Neutral (%)", "Negative (%)"]]
+        ))
 
         fig.update_layout(
             title="Emoji Sentiment Trend with Feature Info",
             yaxis_tickformat=".0%",
             legend_title_text="Sentiment",
-            legend=dict(orientation="h", y=1.1, x=0.3),
-            margin=dict(t=60, b=40),
-            hovermode="x",
-            xaxis_showspikes=True,
-            yaxis_showspikes=True,
-            xaxis_spikemode='across',
-            yaxis_spikemode='across',
-            xaxis_spikesnap='cursor',
-            yaxis_spikesnap='cursor',
-            xaxis_spikethickness=1,
-            yaxis_spikethickness=1,
-            xaxis_spikecolor='blue',
-            yaxis_spikecolor='blue'
+            hovermode="x unified",
+            margin=dict(t=60, b=40)
         )
 
         st.plotly_chart(fig, use_container_width=True)
 
     except Exception as e:
         st.error(f"Data error: {e}")
-
-    st.markdown("</div>", unsafe_allow_html=True)
