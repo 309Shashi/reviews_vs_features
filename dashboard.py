@@ -130,7 +130,7 @@ else:
     # App selector buttons
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
-        if st.button("📹 zoom", use_container_width=True):
+        if st.button("📹 Zoom", use_container_width=True):
             st.session_state.selected_app = "zoom"
     with col2:
         if st.button("💻 Webex", use_container_width=True):
