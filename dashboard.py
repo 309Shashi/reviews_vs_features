@@ -4,27 +4,20 @@ import plotly.graph_objects as go
 import os
 import base64
 
-SHOW_WEBEX = True  # Set to True to show Webex app
-SHOW_FIREFOX = True  # Set to True to show Firefox app
+# --- Toggle Display for Apps ---
+SHOW_WEBEX = False  # Change to True to show Webex app
+SHOW_FIREFOX = False  # Change to True to show Firefox app
 
 # --- Page Config ---
 st.set_page_config(page_title="Features vs Reviews Dashboard", layout="wide")
 
-# --- Session State ---
+# --- Session State Init ---
 if "page" not in st.session_state:
     st.session_state.page = "Dashboard"
 if "selected_app" not in st.session_state:
     st.session_state.selected_app = "zoom"
 if "selected_doc" not in st.session_state:
     st.session_state.selected_doc = None
-
-# --- Load Data ---
-@st.cache_data
-def load_data(app_name):
-    path = f"{app_name.lower()}.csv"
-    if not os.path.exists(path):
-        return None
-    return pd.read_csv(path)
 
 # --- Navigation helper ---
 def set_page(page_name):
@@ -37,16 +30,48 @@ st.markdown("""
             background-color: #e9ecef !important;
             font-family: 'Segoe UI', sans-serif;
         }
-        header[data-testid="stHeader"], [data-testid="stSidebar"] {
+        header[data-testid="stHeader"] {
+            background-color: #ced4da !important;
+            color: black;
+        }
+        [data-testid="stSidebar"] {
             background-color: #ced4da !important;
             color: black !important;
+            width: 200px !important;
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            padding-top: 1rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
         }
         .sidebar-title {
             font-family: 'Trebuchet MS', sans-serif;
+            color: black;
             font-size: 28px;
             font-weight: bold;
             margin-bottom: 1rem;
-            color: black;
+        }
+        .element-container button {
+            font-size: 15px !important;
+            padding: 6px 16px !important;
+            border-radius: 10px !important;
+            transition: 0.3s ease;
+        }
+        .element-container button:hover {
+            background-color: #dee2e6 !important;
+        }
+        .app-card {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+        .stSelectbox label {
+            display: none;
+        }
+        div[data-testid="stHorizontalBlock"] > div:has(> div:empty) {
+            display: none !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -62,11 +87,20 @@ with st.sidebar:
     if st.button("📄 Documents", use_container_width=True):
         set_page("Documents")
 
-# --- Team Page ---
+# --- CSV File Loader ---
+@st.cache_data
+def load_data(app_name):
+    path = f"{app_name.lower()}.csv"
+    if not os.path.exists(path):
+        return None
+    return pd.read_csv(path)
+
+# --- Page Routing ---
 if st.session_state.page == "Team Members":
     st.title("Team Members")
     st.markdown("*We are a team of 13, each contributing uniquely to the success of this project.*")
-    members = [
+
+    team_members = [
         ("Sindhura Patel", "shankesl@mail.uc.edu"),
         ("Sahastra Vadde", "vaddesa@mail.uc.edu"),
         ("Shashidhar Reddy", "gouniksy@mail.uc.edu"),
@@ -81,8 +115,9 @@ if st.session_state.page == "Team Members":
         ("Deepak Reddy Yalla", "yallady@mail.uc.edu"),
         ("Ramakrishna Gampa", "gampara@mail.uc.edu"),
     ]
+
     col1, col2 = st.columns(2)
-    for idx, (name, email) in enumerate(members):
+    for idx, (name, email) in enumerate(team_members):
         with (col1 if idx % 2 == 0 else col2):
             st.markdown(f"""
                 <div style="background:#fff;padding:15px 20px;border-radius:15px;box-shadow:0 2px 6px rgba(0,0,0,0.1);margin-bottom:20px;">
@@ -93,46 +128,33 @@ if st.session_state.page == "Team Members":
                 </div>
             """, unsafe_allow_html=True)
 
-# --- Documents Page ---
 elif st.session_state.page == "Documents":
     st.title("📄 Documents")
+    st.info("Click a document to preview it below or hide it.")
+
     pdf_filename = "Team Brown Video Presentation Checkpoint.pdf"
+
     if st.button(f"📄 {pdf_filename}"):
-        st.session_state.selected_doc = (
-            None if st.session_state.selected_doc == pdf_filename else pdf_filename
-        )
+        if st.session_state.selected_doc == pdf_filename:
+            st.session_state.selected_doc = None
+        else:
+            st.session_state.selected_doc = pdf_filename
+
     if st.session_state.selected_doc == pdf_filename:
         try:
             with open(pdf_filename, "rb") as f:
                 base64_pdf = base64.b64encode(f.read()).decode('utf-8')
-                st.markdown(f"""
-                    <a href="data:application/pdf;base64,{base64_pdf}" target="_blank">📄 Open Team Brown Video Presentation Checkpoint.pdf in new tab</a>
-                    <p style="margin-top:10px;">
-                        📥 <a href="data:application/pdf;base64,{base64_pdf}" download="{pdf_filename}">Click here to download the PDF</a>
-                    </p>
-                """, unsafe_allow_html=True)
+                preview = f"""
+                    <object
+                        data="data:application/pdf;base64,{base64_pdf}"
+                        type="application/pdf"
+                        width="100%" height="700px">
+                        <p>Unable to display PDF. <a href="{pdf_filename}">Download instead</a>.</p>
+                    </object>
+                """
+                st.markdown(preview, unsafe_allow_html=True)
         except FileNotFoundError:
             st.warning(f"⚠️ File not found: {pdf_filename}")
-
-
-    pdf_filename2 = "Team_Brown_Demo.pdf"
-    if st.button(f"📄 {pdf_filename2}"):
-        st.session_state.selected_doc = (
-            None if st.session_state.selected_doc == pdf_filename2 else pdf_filename2
-        )
-    if st.session_state.selected_doc == pdf_filename2:
-        try:
-            with open(pdf_filename2, "rb") as f:
-                base64_pdf2 = base64.b64encode(f.read()).decode('utf-8')
-                st.markdown(f"""
-                    <a href="data:application/pdf;base64,{base64_pdf2}" target="_blank">📄 Open Team_Brown_Demo.pdf in new tab</a>
-                    <p style="margin-top:10px;">
-                        📥 <a href="data:application/pdf;base64,{base64_pdf2}" download="{pdf_filename2}">Click here to download the PDF</a>
-                    </p>
-                """, unsafe_allow_html=True)
-        except FileNotFoundError:
-            st.warning(f"⚠️ File not found: {pdf_filename2}")
-
 
 # --- Dashboard Page ---
 else:
@@ -142,26 +164,28 @@ else:
     with col1:
         if st.button("🎩 zoom", use_container_width=True):
             st.session_state.selected_app = "zoom"
-    with col2:
-        if SHOW_WEBEX:
+    if SHOW_WEBEX:
+        with col2:
             if st.button("💻 Webex", use_container_width=True):
                 st.session_state.selected_app = "webex"
-    with col3:
-        if SHOW_FIREFOX:
+    if SHOW_FIREFOX:
+        with col3:
             if st.button("🌐 Firefox", use_container_width=True):
                 st.session_state.selected_app = "firefox"
 
-    df = load_data(st.session_state.selected_app)
-    st.subheader(f"Sentiment Trend for: {st.session_state.selected_app}")
+    selected_app = st.session_state.selected_app
+    df = load_data(selected_app)
 
-    if df is None:
-        st.error("CSV file not found.")
-        st.stop()
+    st.subheader(f"Sentiment Trend for: {selected_app}")
 
     try:
+        if df is None:
+            st.error(f"CSV file for '{selected_app}' not found.")
+            st.stop()
+
         required_cols = {"Month", "Positive", "Neutral", "Negative", "Feature Title"}
         if not required_cols.issubset(df.columns):
-            st.error("Missing columns in CSV.")
+            st.error(f"The CSV must contain columns: {', '.join(required_cols)}.")
             st.stop()
 
         df['Month'] = pd.to_datetime(df['Month'])
@@ -172,14 +196,37 @@ else:
 
         df_ready = df[["Month", "Feature Title", "Positive (%)", "Neutral (%)", "Negative (%)"]]
 
-        # --- Area Chart ---
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df_ready["Month"], y=df_ready["Positive (%)"],
-            name="Positive", mode="lines", stackgroup="one", line=dict(color="green"), hoverinfo="skip"))
-        fig.add_trace(go.Scatter(x=df_ready["Month"], y=df_ready["Neutral (%)"],
-            name="Neutral", mode="lines", stackgroup="one", line=dict(color="orange"), hoverinfo="skip"))
-        fig.add_trace(go.Scatter(x=df_ready["Month"], y=df_ready["Negative (%)"],
-            name="Negative", mode="lines", stackgroup="one", line=dict(color="red"), hoverinfo="skip"))
+
+        fig.add_trace(go.Scatter(
+            x=df_ready["Month"],
+            y=df_ready["Positive (%)"],
+            name="Positive",
+            mode="lines",
+            stackgroup="one",
+            line=dict(color="green"),
+            hoverinfo="skip"
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=df_ready["Month"],
+            y=df_ready["Neutral (%)"],
+            name="Neutral",
+            mode="lines",
+            stackgroup="one",
+            line=dict(color="orange"),
+            hoverinfo="skip"
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=df_ready["Month"],
+            y=df_ready["Negative (%)"],
+            name="Negative",
+            mode="lines",
+            stackgroup="one",
+            line=dict(color="red"),
+            hoverinfo="skip"
+        ))
 
         fig.add_trace(go.Scatter(
             x=df_ready["Month"],
@@ -200,54 +247,12 @@ else:
         fig.update_layout(
             title="Emoji Sentiment Trend with Feature Info",
             yaxis_tickformat=".0%",
+            legend_title_text="Sentiment",
             hovermode="x unified",
             margin=dict(t=60, b=40)
         )
+
         st.plotly_chart(fig, use_container_width=True)
-
-        # --- Pie Chart ---
-        st.markdown("### 🥧 Overall Review Sentiment Distribution")
-        pie_fig = go.Figure(data=[
-            go.Pie(labels=["Good (Positive)", "Neutral", "Bad (Negative)"],
-                   values=[df['Positive'].sum(), df['Neutral'].sum(), df['Negative'].sum()],
-                   marker=dict(colors=["green", "orange", "red"]), hole=0.3)
-        ])
-        pie_fig.update_layout(margin=dict(t=10, b=10), legend_title_text="Sentiment Type")
-        st.plotly_chart(pie_fig, use_container_width=True)
-
-        # --- Line Chart ---
-        st.markdown("### 📈 Total Reviews Over Time")
-        df['Total Reviews'] = df['Positive'] + df['Neutral'] + df['Negative']
-        line_fig = go.Figure()
-        line_fig.add_trace(go.Scatter(
-            x=df['Month'],
-            y=df['Total Reviews'],
-            mode='lines+markers',
-            line=dict(color="#1f77b4", width=3),
-            name="Total Reviews"
-        ))
-        line_fig.update_layout(
-            xaxis_title="Month", yaxis_title="Review Count",
-            title="Total Reviews Trend", margin=dict(t=40, b=40)
-        )
-        st.plotly_chart(line_fig, use_container_width=True)
-
-        # --- Feature Sentiment Table Filtered by Month ---
-        st.markdown("### 📋 Feature Sentiment Table for Selected Month")
-        unique_months = df['Month'].dt.strftime("%B %Y").unique()
-        selected_month = st.selectbox("Select Month", unique_months)
-
-        selected_df = df[df['Month'].dt.strftime("%B %Y") == selected_month]
-        if not selected_df.empty:
-            feature_table = (
-                selected_df.groupby("Feature Title")[["Positive", "Neutral", "Negative"]]
-                .mean()
-                .reset_index()
-                .sort_values("Positive", ascending=False)
-            )
-            st.dataframe(feature_table.reset_index(drop=True), use_container_width=True)
-        else:
-            st.info("No data available for selected month.")
 
     except Exception as e:
         st.error(f"Data error: {e}")
