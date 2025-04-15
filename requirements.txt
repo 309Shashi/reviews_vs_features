@@ -3,4 +3,3 @@ pandas
 plotly
 numpy
 bash64
-os
