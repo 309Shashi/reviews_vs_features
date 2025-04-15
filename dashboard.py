@@ -106,7 +106,7 @@ elif st.session_state.page == "Documents":
             with open(pdf_filename, "rb") as f:
                 base64_pdf = base64.b64encode(f.read()).decode('utf-8')
                 st.markdown(f"""
-                    <iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="700px" style="border: none;"></iframe>
+                    <a href="data:application/pdf;base64,{base64_pdf}" target="_blank">📄 Open Team Brown Video Presentation Checkpoint.pdf in new tab</a>
                     <p style="margin-top:10px;">
                         📥 <a href="data:application/pdf;base64,{base64_pdf}" download="{pdf_filename}">Click here to download the PDF</a>
                     </p>
@@ -125,7 +125,7 @@ elif st.session_state.page == "Documents":
             with open(pdf_filename2, "rb") as f:
                 base64_pdf2 = base64.b64encode(f.read()).decode('utf-8')
                 st.markdown(f"""
-                    <iframe src="data:application/pdf;base64,{base64_pdf2}" width="100%" height="700px" style="border: none;"></iframe>
+                    <a href="data:application/pdf;base64,{base64_pdf2}" target="_blank">📄 Open Team_Brown_Demo.pdf in new tab</a>
                     <p style="margin-top:10px;">
                         📥 <a href="data:application/pdf;base64,{base64_pdf2}" download="{pdf_filename2}">Click here to download the PDF</a>
                     </p>
